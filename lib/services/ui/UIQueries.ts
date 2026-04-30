@@ -31,7 +31,7 @@ export const UIQueries = {
         Object.entries(parsed).filter(
           ([k, v]) => typeof k === "string" && typeof v === "string"
         )
-      );
+      ) as Record<string, string>;
     } catch {
       return {};
     }
