@@ -69,15 +69,11 @@ export function MonacoView({
     }
   }, []);
 
-  // lazy register graphql language if requested
+  // NOTE: monaco-graphql is temporarily disabled because Next.js + webpack
+  // in this project fails parsing a transitive monaco-editor module in dev.
+  // Keep prop for API compatibility; no-op until dependency/tooling is updated.
   React.useEffect(() => {
-    let active = true;
-    (async () => {
-      if (!enableGraphQL) return;
-      try { await import("monaco-graphql"); } catch {/* optional */}
-      if (!active) return;
-    })();
-    return () => { active = false; };
+    if (!enableGraphQL) return;
   }, [enableGraphQL]);
 
   const beforeMount = React.useCallback((monaco: MonacoNS) => {
