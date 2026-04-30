@@ -1,3 +1,4 @@
+import path from "path";
 // next.config.mjs
 import withPWA from "next-pwa";
 
@@ -142,8 +143,8 @@ const nextConfig = {
      * Optional: ensure these client-only libs never end up in the server bundle.
      * Not strictly necessary because your components son "use client", but harmless.
      */
-    serverExternalPackages: ["@monaco-editor/react", "monaco-editor", "monaco-graphql"],
   },
+  outputFileTracingRoot: path.join(process.cwd()),
   // (Optional) If you serve from a subpath or behind a proxy, add basePath/assetPrefix here.
 };
 
