@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": false,
     "skipLibCheck": true,
     "strict": true,
@@ -16,26 +12,26 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "plugins": [{ "name": "next" }],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
-    "incremental": true
+    "incremental": true,
+
+    /**
+     * Types explicitly included so TS conoce las APIs de Monaco y Node.
+     * - "monaco-editor" aporta IStandaloneThemeData, etc.
+     * - "node" ayuda con tipos de process/env, buffers, etc.
+     */
+    "types": ["monaco-editor", "node"]
   },
   "include": [
     "next-env.d.ts",
+    "global.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

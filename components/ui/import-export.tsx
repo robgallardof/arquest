@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, JSX } from "react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/state/store";
 import { importPostman, exportPostman } from "@/lib/collections/postman";
@@ -15,24 +15,97 @@ interface Collection {
   requests: RequestModel[];
 }
 
-const LS_KEY = "collections";
+/** Single-key KV used in IndexedDB. */
+const KV_KEY = "collections";
 
-/** Persists current collections to localStorage. */
-function persistNow(): void {
+/** IDB config (single database with a 'kv' object store). */
+const IDB = {
+  name: "app-store",
+  version: 1,
+  store: "kv",
+} as const;
+
+/**
+ * Opens (or creates) the IndexedDB database and object store.
+ * Ensures a simple KV store with keyPath 'k'.
+ */
+async function openDb(): Promise<IDBDatabase> {
+  if (typeof indexedDB === "undefined") {
+    throw new Error("IndexedDB not available");
+  }
+  return await new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB.name, IDB.version);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB.store)) {
+        db.createObjectStore(IDB.store, { keyPath: "k" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Puts a value into the KV store, under the provided key.
+ * Uses structured clone (safe for plain JS objects/arrays).
+ */
+async function idbSet<T>(key: string, value: T): Promise<void> {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(IDB.store, "readwrite");
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    const store = tx.objectStore(IDB.store);
+    store.put({ k: key, v: value });
+  });
+  db.close?.();
+}
+
+/**
+ * Reads a value from the KV store.
+ */
+async function idbGet<T>(key: string): Promise<T | undefined> {
+  const db = await openDb();
+  const value = await new Promise<T | undefined>((resolve, reject) => {
+    const tx = db.transaction(IDB.store, "readonly");
+    tx.onerror = () => reject(tx.error);
+    const store = tx.objectStore(IDB.store);
+    const getReq = store.get(key);
+    getReq.onsuccess = () => resolve(getReq.result?.v as T | undefined);
+    getReq.onerror = () => reject(getReq.error);
+  });
+  db.close?.();
+  return value;
+}
+
+/**
+ * Persists current collections to IndexedDB.
+ * Falls back to localStorage if IDB is not available.
+ */
+async function persistNow(): Promise<void> {
   try {
     const { collections } = useStore.getState() as {
       collections: Record<string, Collection>;
     };
-    localStorage.setItem(LS_KEY, JSON.stringify(collections));
+    await idbSet(KV_KEY, collections);
   } catch {
-    // ignore
+    // Fallback (rare/no-IDB environments)
+    try {
+      const { collections } = useStore.getState() as {
+        collections: Record<string, Collection>;
+      };
+      localStorage.setItem(KV_KEY, JSON.stringify(collections));
+    } catch {
+      // ignore
+    }
   }
 }
 
 /**
  * Import/Export controls for Postman/Thunder formats.
  * - No `any` types.
- * - Persists after successful import.
+ * - Persists after successful import (IndexedDB first, localStorage as fallback).
  */
 export function ImportExport(): JSX.Element {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -55,7 +128,7 @@ export function ImportExport(): JSX.Element {
           const col =
             type === "postman" ? importPostman(json) : importThunder(json);
           upsertCollection(col as Collection);
-          persistNow();
+          void persistNow();
           alert("Colección importada: " + (col as Collection).name);
         } catch {
           alert("Archivo inválido.");
@@ -65,7 +138,7 @@ export function ImportExport(): JSX.Element {
         }
       };
 
-      // keep a stable ref to remove listener
+      // stable handler ref for removal
       const handler = (): void => {
         void handleChange();
       };
@@ -122,18 +195,10 @@ export function ImportExport(): JSX.Element {
         className="hidden"
         accept=".json,application/json"
       />
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => onPick("postman")}
-      >
+      <Button size="sm" variant="outline" onClick={() => onPick("postman")}>
         Import Postman
       </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => onPick("thunder")}
-      >
+      <Button size="sm" variant="outline" onClick={() => onPick("thunder")}>
         Import Thunder
       </Button>
       <span className="mx-2 text-muted-foreground" aria-hidden="true">

@@ -1,18 +1,20 @@
-// lib/http/runner.ts
-
 export interface RunRequestInit
   extends Omit<RequestInit, "body" | "headers" | "signal"> {
   /** Absolute or relative URL to fetch. */
   url: string;
   /** Additional headers to send. These will be normalized and merged. */
   headers?: HeadersInit;
-  /** Raw body. Ignored if `json` is provided. */
+  /** Raw body. Ignored if `json` is provided or method is GET/HEAD. */
   body?: BodyInit | null;
   /** Convenience: JSON value to be stringified into the request body. */
   json?: unknown;
   /** Convenience: query params to append to the URL (null/undefined are skipped). */
   params?: Record<string, string | number | boolean | null | undefined>;
-  /** Request timeout in milliseconds. Defaults to 30000 (30s). */
+  /**
+   * Request timeout in milliseconds.
+   * If omitted or <= 0, NO timeout will be applied (the request can run indefinitely).
+   * Use an external AbortSignal to cancel manually from the UI.
+   */
   timeoutMs?: number;
   /**
    * External AbortSignal to cancel the request. It is chained with the internal
@@ -77,27 +79,20 @@ function withParams(url: string, params?: RunRequestInit["params"]): string {
   return u.toString();
 }
 
+/** True if the HTTP method is allowed to carry a request body. */
+function methodAllowsBody(m: string | undefined): boolean {
+  const mm = (m ?? "GET").toUpperCase();
+  return !(mm === "GET" || mm === "HEAD");
+}
+
 /**
  * Performs a fetch with:
- * - timeout & abort chaining (internal AbortController + optional external signal),
- * - optional JSON body (auto sets Content-Type if missing),
- * - optional query params,
- * - normalized/merged headers,
- * - stable text body for downstream UI.
- *
- * @example
- * // Basic usage
- * const res = await runRequest({ url: "https://httpbin.org/get" });
- *
- * @example
- * // JSON POST with timeout and params
- * const res = await runRequest({
- *   url: "https://api.example.com/items",
- *   method: "POST",
- *   params: { q: "shoes", page: 2 },
- *   json: { name: "Boots", price: 99.9 },
- *   timeoutMs: 15000,
- * });
+ * - Optional timeout (disabled if `timeoutMs` is omitted or <= 0) and abort chaining
+ *   (internal AbortController + optional external signal),
+ * - Optional JSON body (auto-sets Content-Type if missing),
+ * - Optional query params,
+ * - Normalized/merged headers,
+ * - Stable text body for downstream UI.
  */
 export async function runRequest(
   init: RunRequestInit
@@ -106,7 +101,7 @@ export async function runRequest(
     url,
     params,
     json,
-    timeoutMs = 30_000,
+    timeoutMs, // no default ⇒ no timeout unless > 0
     signal: externalSignal,
     headers: initHeaders,
     body: initBody,
@@ -114,15 +109,20 @@ export async function runRequest(
     ...rest
   } = init;
 
+  const methodNorm = (method ?? "GET").toUpperCase();
+
   // URL + params
-  const finalUrl = withParams(url, params);
+  const urlWithParams = withParams(url, params);
+  const finalUrl = urlWithParams; // no proxy rewrite
 
   // Headers (normalized and mutable)
   const headers = new Headers(initHeaders);
 
-  // If `json` is provided, serialize it and set Content-Type when missing
+  // If `json` is provided and method allows a body, serialize it and set Content-Type when missing
   let body: BodyInit | null | undefined = initBody;
-  if (json !== undefined) {
+  if (!methodAllowsBody(methodNorm)) {
+    body = undefined; // never send a body for GET/HEAD
+  } else if (json !== undefined) {
     if (!headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
@@ -134,11 +134,17 @@ export async function runRequest(
     headers.set("Accept", "application/json, text/*;q=0.9, */*;q=0.8");
   }
 
-  // Timeout + chain with external signal
+  // Abort controller + optional timeout
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    controller.abort(new DOMException("Request timed out", "AbortError"));
-  }, timeoutMs);
+  let timeoutId: number | null = null;
+  let timedOut = false;
+
+  if (typeof timeoutMs === "number" && timeoutMs > 0) {
+    timeoutId = window.setTimeout(() => {
+      timedOut = true;
+      controller.abort(new DOMException("Request timed out", "AbortError"));
+    }, timeoutMs);
+  }
 
   if (externalSignal) {
     if (externalSignal.aborted) {
@@ -155,7 +161,7 @@ export async function runRequest(
   const t0 = nowMs();
   try {
     const res = await fetch(finalUrl, {
-      method: method ?? "GET",
+      method: methodNorm,
       headers,
       body,
       redirect: "follow",
@@ -164,7 +170,7 @@ export async function runRequest(
       ...rest,
     });
 
-    clearTimeout(timeoutId);
+    if (timeoutId !== null) window.clearTimeout(timeoutId);
     const t1 = nowMs();
 
     const contentType = res.headers.get("content-type") ?? "";
@@ -182,7 +188,7 @@ export async function runRequest(
       body: text,
     };
   } catch (err: unknown) {
-    clearTimeout(timeoutId);
+    if (timeoutId !== null) window.clearTimeout(timeoutId);
 
     const aborted =
       (err instanceof DOMException && err.name === "AbortError") ||
@@ -192,18 +198,22 @@ export async function runRequest(
 
     const message = aborted
       ? `Request aborted${
-          externalSignal?.aborted ? " (external signal)" : " (timeout)"
+          timedOut
+            ? " (timeout)"
+            : externalSignal?.aborted
+              ? " (external signal)"
+              : " (user)"
         }.`
       : err instanceof Error
-      ? err.message
-      : String(err);
+        ? err.message
+        : String(err);
 
     const t1 = nowMs();
     return {
       ok: false,
       status: 0,
       statusText: aborted ? "ABORTED" : "NETWORK_ERROR",
-      url: finalUrl,
+      url: urlWithParams,
       redirected: false,
       durationMs: t1 - t0,
       headers: {},

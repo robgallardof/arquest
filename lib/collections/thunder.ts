@@ -52,15 +52,15 @@ function toBody(obj: unknown): RequestBody | undefined {
 
   if (typeRaw === "graphql" && typeof any.graphql === "object" && any.graphql) {
     const g = any.graphql as Record<string, unknown>;
+    const variables = g.variables as Record<string, unknown> | undefined;
     return {
       type: "graphql",
       graphql: {
         query: String(g.query ?? ""),
-        variables: g.variables as unknown, 
+        variables: variables ?? {},
       },
     };
   }
-
   if (typeRaw === "form" && Array.isArray(any.form)) {
     return {
       type: "form",
