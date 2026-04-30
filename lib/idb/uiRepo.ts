@@ -6,7 +6,12 @@ import { idbGet, idbSet } from "./core";
  * Persists UI flags and numeric values in the "ui" object store.
  */
 
-export type UIKey = "sidebar:width" | "sidebar:collapsed" | "requestpane:width";
+export type UIKey =
+  | "sidebar:width"
+  | "sidebar:collapsed"
+  | "requestpane:width"
+  | "ui:language"
+  | "ui:envvars";
 
 /** Internal on-disk row format for the "ui" store. */
 interface UIRowNumber {
@@ -18,7 +23,11 @@ interface UIRowBool {
   /** 1 = true, 0 = false */
   value: 1 | 0;
 }
-type UIRow = UIRowNumber | UIRowBool;
+interface UIRowString {
+  key: Extract<UIKey, "ui:language" | "ui:envvars">;
+  value: string;
+}
+type UIRow = UIRowNumber | UIRowBool | UIRowString;
 
 export const UIRepo = {
   /**
@@ -60,6 +69,24 @@ export const UIRepo = {
   /** Sets a boolean UI value. */
   async setBoolean(key: Extract<UIKey, "sidebar:collapsed">, value: boolean) {
     const row: UIRowBool = { key, value: value ? 1 : 0 };
+    await idbSet("ui", row);
+  },
+
+  async getString(
+    key: Extract<UIKey, "ui:language" | "ui:envvars">
+  ): Promise<string | undefined> {
+    const row = await idbGet<UIRow>("ui", key);
+    if (!row) return undefined;
+    return typeof (row as any).value === "string"
+      ? (row as any).value
+      : undefined;
+  },
+
+  async setString(
+    key: Extract<UIKey, "ui:language" | "ui:envvars">,
+    value: string
+  ) {
+    const row: UIRowString = { key, value };
     await idbSet("ui", row);
   },
 };

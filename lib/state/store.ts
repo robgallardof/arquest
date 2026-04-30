@@ -10,6 +10,7 @@ import {
 } from "idb-keyval";
 import type { RequestModel } from "@/lib/domain/models";
 import type { Collection as UiCollection } from "@/types/collections";
+import { createDefaultRequest } from "@/utils/request-factory";
 
 /**
  * Global app state.
@@ -64,6 +65,14 @@ const KV = createStore("tp-db", "collections");
 
 /** Guard to avoid multiple hydrations under HMR. */
 let didHydrate = false;
+
+function createDefaultCollection(): UiCollection {
+  return {
+    id: crypto.randomUUID(),
+    name: "New collection",
+    requests: [createDefaultRequest()],
+  };
+}
 
 /** Scoped idb helpers (persist the full UI collection shape). */
 export const idb = {
@@ -166,6 +175,12 @@ if (typeof window !== "undefined" && !didHydrate) {
     if (Object.keys(loaded).length === 0) {
       await idb.migrateFromDefault();
       loaded = await idb.loadAll();
+    }
+
+    if (Object.keys(loaded).length === 0) {
+      const seed = createDefaultCollection();
+      await idb.save(seed);
+      loaded = { [seed.id]: seed };
     }
 
     const ids = Object.keys(loaded);

@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
+  useCallback,
   useDeferredValue,
   useEffect,
   useLayoutEffect,
@@ -79,14 +80,14 @@ export function Workspace(): React.JSX.Element {
   const methodRailRef = useRef<HTMLDivElement>(null);
 
   // Derived list of requests
-  const allRequests = col?.requests ?? [];
   const filteredRequests = useMemo(() => {
+    const allRequests = col?.requests ?? [];
     if (!deferredQuery) return allRequests;
     const q = deferredQuery.toLowerCase();
     return allRequests.filter(
       (r) => r.name.toLowerCase().includes(q) || r.url.toLowerCase().includes(q)
     );
-  }, [allRequests, deferredQuery]);
+  }, [col?.requests, deferredQuery]);
 
   const requestCount = filteredRequests.length;
 
@@ -127,7 +128,7 @@ export function Workspace(): React.JSX.Element {
     const parent = methodRailRef.current.getBoundingClientRect();
     const x = rect.left - parent.left;
     gsap.to(bar, { x, width: rect.width, duration: 0.18, ease: "power2.out" });
-  }, [req?.method]);
+  }, [req]);
 
   /** Creates a new request and focuses it. */
   function newReq(): void {
@@ -151,7 +152,7 @@ export function Workspace(): React.JSX.Element {
   }
 
   /** Sends the active request. */
-  async function send(): Promise<void> {
+  const send = useCallback(async (): Promise<void> => {
     if (!req || sending) return;
     setSending(true);
     setStatus("");
@@ -186,7 +187,7 @@ export function Workspace(): React.JSX.Element {
     } finally {
       setSending(false);
     }
-  }
+  }, [req, sending]);
 
   // Ctrl/Cmd + Enter to send
   useEffect(() => {
@@ -198,7 +199,7 @@ export function Workspace(): React.JSX.Element {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [req, sending]);
+  }, [send]);
 
   const statusTone = useMemo(() => {
     if (statusCode == null) return "bg-muted text-foreground/70 ring-border/50";

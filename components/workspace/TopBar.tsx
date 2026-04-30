@@ -10,6 +10,8 @@ import type { HttpMethod } from "@/types/http";
 import type { RequestModel } from "@/lib/domain/models";
 import { MethodSelector } from "./MethodSelector";
 import { ImportExportMenu } from "./ImportExportMenu";
+import { UIQueries } from "@/lib/services/ui/UIQueries";
+import { UICommands } from "@/lib/services/ui/UICommands";
 
 /**
  * URL schema:
@@ -23,7 +25,8 @@ const urlSchema = z
   .min(1, "URL is required")
   .refine((s) => {
     try {
-      const u = new URL(s);
+      const normalized = s.replace(/\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}/g, "x");
+      const u = new URL(normalized);
       return u.protocol === "http:" || u.protocol === "https:";
     } catch {
       return false;
@@ -77,6 +80,7 @@ export function TopBar(props: {
 
   /** Track focus to avoid overriding user input with external changes. */
   const [focused, setFocused] = useState(false);
+  const [lang, setLang] = useState<"es" | "en">("es");
 
   /** Debounce timer + last scheduled value. */
   const timerRef = useRef<number | null>(null);
@@ -93,6 +97,17 @@ export function TopBar(props: {
     : undefined;
 
   /** Reset local value only when selected request changes. */
+  useEffect(() => {
+    let alive = true;
+    UIQueries.getLanguage().then((saved) => {
+      if (!alive) return;
+      if (saved === "es" || saved === "en") setLang(saved);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (!reqId) return;
     setInnerUrl(urlValue ?? "");
@@ -157,6 +172,19 @@ export function TopBar(props: {
           </div>
         )}
         <div className="ml-auto w-full sm:w-auto flex items-center gap-2 justify-end">
+          <select
+            value={lang}
+            onChange={(e) => {
+              const next = e.target.value === "en" ? "en" : "es";
+              setLang(next);
+              UICommands.setLanguage(next).catch(() => {});
+            }}
+            className="h-8 rounded-md border bg-background px-2 text-xs"
+            aria-label="Seleccionar idioma"
+          >
+            <option value="es">ES</option>
+            <option value="en">EN</option>
+          </select>
           {RightControls}
           <ImportExportMenu />
         </div>
@@ -183,7 +211,7 @@ export function TopBar(props: {
                   ? "ring-1 ring-destructive focus-visible:ring-2 focus-visible:ring-destructive/50"
                   : "",
               ].join(" ")}
-              placeholder="https://api.example.com/resource?foo=1"
+              placeholder={lang === "es" ? "https://api.example.com/recurso?foo=1" : "https://api.example.com/resource?foo=1"}
               value={innerUrl}
               onFocus={() => setFocused(true)}
               onBlur={(e) => {
@@ -222,10 +250,10 @@ export function TopBar(props: {
             />
             {!isValidUrl && (
               <p id="url-error" className="mt-1 text-xs text-destructive">
-                {urlErrorMsg}
+                {lang === "es" ? "URL inválida. Usa http:// o https://" : urlErrorMsg}
               </p>
             )}
-            <p className="mt-1 text-[11px] text-muted-foreground">Admite URLs locales y externas. Si el servidor remoto bloquea CORS, se intentará proxy seguro automáticamente.</p>
+            <p className="mt-1 text-[11px] text-muted-foreground">{lang === "es" ? "Admite URLs locales y externas. Escribe la URL y presiona Enviar." : "Supports local/external URLs. Type a URL and press Send."}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -267,12 +295,12 @@ export function TopBar(props: {
                       fill="currentColor"
                     />
                   </svg>
-                  Stop
+                  {lang === "es" ? "Cancelar" : "Stop"}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2">
                   <FiSend size={14} />
-                  Send
+                  {lang === "es" ? "Enviar" : "Send"}
                 </span>
               )}
             </Button>

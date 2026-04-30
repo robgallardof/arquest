@@ -21,6 +21,7 @@ import type { ParamKV, RequestModel } from "@/lib/domain/models";
 import { Allotment } from "allotment";
 import { RequestList } from "./request/RequestList/RequestList";
 import { ResponseViewer } from "./ResponseViewer";
+import { EnvVarsManager } from "./EnvVarsManager";
 
 /** Left pane min/max/default width (px). */
 const PANE_MIN = 240;
@@ -56,6 +57,7 @@ export function Workspace(): React.JSX.Element {
     collections,
     activeCollectionId,
     openRequestId,
+    setActiveCollection,
     setOpenRequest,
     upsertRequest,
     upsertCollection,
@@ -64,6 +66,7 @@ export function Workspace(): React.JSX.Element {
       collections: s.collections,
       activeCollectionId: s.activeCollectionId,
       openRequestId: s.openRequestId,
+      setActiveCollection: s.setActiveCollection,
       setOpenRequest: s.setOpenRequest,
       upsertRequest: s.upsertRequest,
       upsertCollection: s.upsertCollection,
@@ -84,6 +87,7 @@ export function Workspace(): React.JSX.Element {
   const [statusCode, setStatusCode] = useState<number | null>(null);
   const [respBody, setRespBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [envVars, setEnvVars] = useState<Record<string, string>>({});
 
   /** AbortController for cancel. */
   const abortRef = useRef<AbortController | null>(null);
@@ -114,6 +118,10 @@ export function Workspace(): React.JSX.Element {
   );
 
   /** Right content entrance animation. */
+  useEffect(() => {
+    UIQueries.getEnvVars().then(setEnvVars).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (!mainRef.current) return;
     const ctx = gsap.context(() => {
@@ -157,11 +165,21 @@ export function Workspace(): React.JSX.Element {
 
   /** Create & focus a new request. */
   const createAndFocus = useCallback(() => {
-    if (!col) return;
+    let targetCollection = col;
+    if (!targetCollection) {
+      const seeded = {
+        id: crypto.randomUUID(),
+        name: "New collection",
+        requests: [],
+      };
+      upsertCollection(seeded);
+      setActiveCollection(seeded.id);
+      targetCollection = seeded;
+    }
     const r = createDefaultRequest();
-    upsertRequest(col.id, r);
+    upsertRequest(targetCollection.id, r);
     setOpenRequest(r.id);
-  }, [col, upsertRequest, setOpenRequest]);
+  }, [col, upsertRequest, setOpenRequest, upsertCollection, setActiveCollection]);
 
   /** Change method. */
   const setMethod = useCallback(
@@ -257,7 +275,7 @@ export function Workspace(): React.JSX.Element {
     abortRef.current = ctrl;
 
     try {
-      const m = materializeRequest(req);
+      const m = materializeRequest(req, envVars);
 
       const res = await runRequest({
         url: m.url,
@@ -281,7 +299,7 @@ export function Workspace(): React.JSX.Element {
       setSending(false);
       abortRef.current = null;
     }
-  }, [req, sending]);
+  }, [req, sending, envVars]);
 
   /** Shortcuts: Ctrl/Cmd+Enter to send; Esc to cancel. */
   useEffect(() => {
@@ -374,7 +392,15 @@ export function Workspace(): React.JSX.Element {
           onChangeMethod={setMethod}
           onSend={() => void send()}
           onCancel={cancelSend}
-          RightControls={null}
+          RightControls={
+            <EnvVarsManager
+              value={envVars}
+              onSave={(next) => {
+                setEnvVars(next);
+                UICommands.setEnvVars(next).catch(() => {});
+              }}
+            />
+          }
         />
 
         <div className="min-h-0 flex-1 min-w-0 overflow-hidden">

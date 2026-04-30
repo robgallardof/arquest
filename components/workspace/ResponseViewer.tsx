@@ -122,6 +122,12 @@ export function ResponseViewer({
         : statusCode >= 300 && statusCode < 400
           ? "bg-amber-500/15 text-amber-700 ring-amber-500/20"
           : "bg-rose-500/15 text-rose-700 ring-rose-500/20";
+  const sendTone =
+    statusCode != null && statusCode >= 200 && statusCode < 300
+      ? "text-emerald-700"
+      : statusCode != null && statusCode >= 400
+        ? "text-rose-700"
+        : "text-foreground";
 
   // Global shortcuts for view toggle
   useEffect(() => {
@@ -140,9 +146,9 @@ export function ResponseViewer({
   return (
     <div ref={containerRef}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-2 text-xs">
-        <span className={`rounded px-1.5 py-0.5 ring-1 ${statusTone}`}>
-          Status: {status || "-"}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2 text-xs">
+        <span className={`rounded-full px-2.5 py-1 ring-1 font-medium ${statusTone}`}>
+          {statusCode ?? "-"} · {status || "Sin estado"}
         </span>
 
         <div className="flex items-center gap-2">
@@ -226,10 +232,10 @@ export function ResponseViewer({
                   document.body.removeChild(ta);
                 }
               }}
-              className="absolute right-2 bottom-2 sm:top-2 sm:bottom-auto gap-1.5 shadow-sm ring-1 ring-border/60 hover:ring-border bg-background/90 backdrop-blur"
+              className={`absolute right-2 bottom-2 sm:top-2 sm:bottom-auto gap-1.5 shadow-sm ring-1 ring-border/60 hover:ring-border bg-background/90 backdrop-blur ${sendTone}`}
             >
               <Copy className="h-4 w-4" />
-              <span className="hidden md:inline">Copy</span>
+              <span className="hidden md:inline">Copiar respuesta</span>
             </Button>
           </>
         ) : (
@@ -266,10 +272,10 @@ export function ResponseViewer({
                   document.body.removeChild(ta);
                 }
               }}
-              className="absolute right-2 bottom-2 sm:top-2 sm:bottom-auto gap-1.5 shadow-sm ring-1 ring-border/60 hover:ring-border bg-background/90 backdrop-blur"
+              className={`absolute right-2 bottom-2 sm:top-2 sm:bottom-auto gap-1.5 shadow-sm ring-1 ring-border/60 hover:ring-border bg-background/90 backdrop-blur ${sendTone}`}
             >
               <Copy className="h-4 w-4" />
-              <span className="hidden md:inline">Copy</span>
+              <span className="hidden md:inline">Copiar respuesta</span>
             </Button>
           </>
         )}

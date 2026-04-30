@@ -116,7 +116,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       {/* Head tags from `metadata`/`viewport` are injected automatically */}
       <body className="font-sans antialiased">{children}</body>
     </html>
