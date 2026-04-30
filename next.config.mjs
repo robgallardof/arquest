@@ -1,6 +1,9 @@
 import path from "path";
+import { fileURLToPath } from "url";
 // next.config.mjs
 import withPWA from "next-pwa";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Whether we’re building for production.
@@ -144,7 +147,7 @@ const nextConfig = {
      * Not strictly necessary because your components son "use client", but harmless.
      */
   },
-  outputFileTracingRoot: path.join(process.cwd()),
+  outputFileTracingRoot: __dirname,
   // (Optional) If you serve from a subpath or behind a proxy, add basePath/assetPrefix here.
 };
 
