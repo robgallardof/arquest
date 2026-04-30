@@ -1,3 +1,5 @@
+import { runtimeConfig } from "@/lib/config/runtime";
+
 export interface RunRequestInit
   extends Omit<RequestInit, "body" | "headers" | "signal"> {
   /** Absolute or relative URL to fetch. */
@@ -16,6 +18,8 @@ export interface RunRequestInit
    * Use an external AbortSignal to cancel manually from the UI.
    */
   timeoutMs?: number;
+  /** Try server proxy automatically on CORS/network block. */
+  enableProxyFallback?: boolean;
   /**
    * External AbortSignal to cancel the request. It is chained with the internal
    * timeout-based signal so either one can abort the fetch.
@@ -79,6 +83,17 @@ function withParams(url: string, params?: RunRequestInit["params"]): string {
   return u.toString();
 }
 
+
+
+function toProxyUrl(url: string): string {
+  return `/api/proxy?url=${encodeURIComponent(url)}`;
+}
+
+function isPotentialCorsOrNetworkError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+  return msg.includes("failed to fetch") || msg.includes("cors") || msg.includes("network");
+}
+
 /** True if the HTTP method is allowed to carry a request body. */
 function methodAllowsBody(m: string | undefined): boolean {
   const mm = (m ?? "GET").toUpperCase();
@@ -102,6 +117,7 @@ export async function runRequest(
     params,
     json,
     timeoutMs, // no default ⇒ no timeout unless > 0
+    enableProxyFallback = runtimeConfig.enableProxyFallback,
     signal: externalSignal,
     headers: initHeaders,
     body: initBody,
@@ -113,7 +129,7 @@ export async function runRequest(
 
   // URL + params
   const urlWithParams = withParams(url, params);
-  const finalUrl = urlWithParams; // no proxy rewrite
+  const finalUrl = urlWithParams;
 
   // Headers (normalized and mutable)
   const headers = new Headers(initHeaders);
@@ -160,7 +176,10 @@ export async function runRequest(
 
   const t0 = nowMs();
   try {
-    const res = await fetch(finalUrl, {
+    let requestUrl = finalUrl;
+    let res: Response;
+    try {
+      res = await fetch(requestUrl, {
       method: methodNorm,
       headers,
       body,
@@ -169,6 +188,18 @@ export async function runRequest(
       // Add credentials/referrer/policy here if your app requires it.
       ...rest,
     });
+    } catch (initialErr) {
+      if (!enableProxyFallback || !isPotentialCorsOrNetworkError(initialErr)) throw initialErr;
+      requestUrl = toProxyUrl(finalUrl);
+      res = await fetch(requestUrl, {
+        method: methodNorm,
+        headers,
+        body,
+        redirect: "follow",
+        signal: controller.signal,
+        ...rest,
+      });
+    }
 
     if (timeoutId !== null) window.clearTimeout(timeoutId);
     const t1 = nowMs();

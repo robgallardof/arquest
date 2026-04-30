@@ -15,6 +15,7 @@ import { BodyEditor } from "../BodyEditor";
 import { gsap } from "gsap";
 import { UIQueries } from "@/lib/services/ui/UIQueries";
 import { UICommands } from "@/lib/services/ui/UICommands";
+import { runtimeConfig } from "@/lib/config/runtime";
 import { TopBar } from "./TopBar";
 import type { ParamKV, RequestModel } from "@/lib/domain/models";
 import { Allotment } from "allotment";
