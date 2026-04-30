@@ -47,7 +47,7 @@ function ContextMenuLite({
   y: number;
   items: MenuItem[];
   onClose: () => void;
-}): JSX.Element | null {
+}): React.JSX.Element | null {
   const menuRef = useRef<HTMLDivElement>(null);
   const [activeIdx, setActiveIdx] = useState<number>(0);
 
@@ -151,7 +151,7 @@ function ContextMenuLite({
  * - Responsive: full width on small screens, 18rem on md+.
  * - Strong truncation rules with min-w-0 to avoid invisible text.
  */
-export function Sidebar(): JSX.Element {
+export function Sidebar(): React.JSX.Element {
   const {
     collections,
     activeCollectionId,

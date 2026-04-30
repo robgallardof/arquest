@@ -57,7 +57,7 @@ export function ResponseViewer({
   statusCode: number | null;
   body: string;
   contentType?: string;
-}): JSX.Element {
+}): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

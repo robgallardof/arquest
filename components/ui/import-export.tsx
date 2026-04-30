@@ -107,7 +107,7 @@ async function persistNow(): Promise<void> {
  * - No `any` types.
  * - Persists after successful import (IndexedDB first, localStorage as fallback).
  */
-export function ImportExport(): JSX.Element {
+export function ImportExport(): React.JSX.Element {
   const fileRef = useRef<HTMLInputElement>(null);
   const { upsertCollection } = useStore() as {
     upsertCollection: (c: Collection) => void;

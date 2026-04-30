@@ -51,7 +51,7 @@ function safeAllotResize(ref: React.MutableRefObject<any>, px: number) {
  * - TopBar autosaves URL while typing (debounced), shows selected request URL.
  * - Proxy removed: requests go directly from the browser (CORS must be allowed by the target).
  */
-export function Workspace(): JSX.Element {
+export function Workspace(): React.JSX.Element {
   const {
     collections,
     activeCollectionId,

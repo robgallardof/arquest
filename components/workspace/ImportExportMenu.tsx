@@ -44,7 +44,7 @@ function downloadJson(filename: string, jsonData: string): void {
  * - Export: Postman/Thunder JSON files.
  * - Keeps dark-mode visual consistency using shared shadcn menu styles.
  */
-export function ImportExportMenu(): JSX.Element {
+export function ImportExportMenu(): React.JSX.Element {
   const { upsertCollection } = useStore() as {
     upsertCollection: (c: Collection) => void;
   };
