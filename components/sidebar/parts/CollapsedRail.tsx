@@ -270,7 +270,7 @@ export function CollapsedRail({
   activeId,
   onSelect,
   onContext,
-}: CollapsedRailProps): JSX.Element {
+}: CollapsedRailProps): React.JSX.Element {
   // Input memo
   const memoizedCollections = React.useMemo(
     () => collections ?? [],

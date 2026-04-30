@@ -76,7 +76,7 @@ function ensureString(v: unknown): string {
  * Textarea fallback component when Monaco Editor is not ready
  * @component
  * @param {React.TextareaHTMLAttributes<HTMLTextAreaElement>} props - Textarea props
- * @returns {JSX.Element} Rendered textarea
+ * @returns {React.JSX.Element} Rendered textarea
  */
 const TextareaEdit = (
   props: React.TextareaHTMLAttributes<HTMLTextAreaElement>
@@ -110,7 +110,7 @@ const TextareaEdit = (
  * ```
  *
  * @param {BodyEditorProps} props - Component configuration
- * @returns {JSX.Element} Rendered body editor
+ * @returns {React.JSX.Element} Rendered body editor
  *
  * @features
  * - Multiple body types: raw, JSON, XML, form, GraphQL, binary
@@ -142,7 +142,7 @@ export function BodyEditor({
   req,
   colId,
   disabled = false,
-}: BodyEditorProps): JSX.Element {
+}: BodyEditorProps): React.JSX.Element {
   const { upsertRequest } = useStore();
   const body: RequestBody | undefined = req.body;
 

@@ -218,7 +218,7 @@ RailItem.displayName = "RailItem";
  * ```
  *
  * @param {CollapsedRailProps} props - Component props
- * @returns {JSX.Element} Rendered collapsed rail navigation
+ * @returns {React.JSX.Element} Rendered collapsed rail navigation
  *
  * @features
  * - Smooth GSAP animations on hover interactions
@@ -245,7 +245,7 @@ export function CollapsedRail({
   activeId,
   onSelect,
   onContext,
-}: CollapsedRailProps): JSX.Element {
+}: CollapsedRailProps): React.JSX.Element {
   // Memoize collections to prevent unnecessary re-renders
   const memoizedCollections = React.useMemo(() => collections, [collections]);
 

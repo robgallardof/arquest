@@ -48,7 +48,7 @@ function prettyMaybe(text: string): string {
 /**
  * Request workspace (responsive, fixed toolbar on sidebar, modern shadcn UI, GSAP accents).
  */
-export function Workspace(): JSX.Element {
+export function Workspace(): React.JSX.Element {
   const {
     collections,
     activeCollectionId,
@@ -431,7 +431,7 @@ function HeaderEditor({
 }: {
   req: RequestModel;
   colId: string;
-}): JSX.Element {
+}): React.JSX.Element {
   const { upsertRequest } = useStore();
   const rowRef = useRef<HTMLDivElement>(null);
 
@@ -512,7 +512,7 @@ function HeaderEditor({
 }
 
 /** Copy to clipboard. */
-function CopyButton({ payload }: { payload: string }): JSX.Element {
+function CopyButton({ payload }: { payload: string }): React.JSX.Element {
   const [copied, setCopied] = useState(false);
   return (
     <Button
