@@ -168,7 +168,17 @@ export function buildBodyAndHeaders(
  *
  * @param req Request model to materialize into a real HTTP request.
  */
-export function materializeRequest(req: RequestModel): {
+function applyEnv(input: string, env: Record<string, string>): string {
+  return input.replace(/\{\{\s*([A-Za-z0-9_.-]+)\s*\}\}/g, (_, key) => {
+    const next = env[key];
+    return typeof next === "string" ? next : "";
+  });
+}
+
+export function materializeRequest(
+  req: RequestModel,
+  envVars: Record<string, string> = {}
+): {
   url: string;
   method: RequestModel["method"];
   headers: Record<string, string>;
@@ -176,12 +186,19 @@ export function materializeRequest(req: RequestModel): {
 } {
   // 1) Headers from KVs
   let headers = toHeaderMap(req.headers ?? []);
+  headers = Object.fromEntries(
+    Object.entries(headers).map(([k, v]) => [k, applyEnv(v ?? "", envVars)])
+  );
 
   // 2) URL + enabled params (preserve existing query)
-  let url = appendParams(req.url, req.params ?? []);
+  let url = appendParams(applyEnv(req.url, envVars), req.params ?? []);
 
   // 3) Body & content-type handling
-  const built = buildBodyAndHeaders(req.body, headers);
+  const bodyWithEnv =
+    req.body?.raw != null
+      ? { ...req.body, raw: applyEnv(req.body.raw, envVars) }
+      : req.body;
+  const built = buildBodyAndHeaders(bodyWithEnv, headers);
   headers = built.headers;
 
   // 4) Auth (respects a manual Authorization header)

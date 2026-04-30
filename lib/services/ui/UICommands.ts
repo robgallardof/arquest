@@ -18,4 +18,10 @@ export const UICommands = {
   setRequestPaneWidth(px: number): Promise<void> {
     return UIRepo.setNumber("requestpane:width", px);
   },
+  setLanguage(lang: "es" | "en"): Promise<void> {
+    return UIRepo.setString("ui:language", lang);
+  },
+  setEnvVars(vars: Record<string, string>): Promise<void> {
+    return UIRepo.setString("ui:envvars", JSON.stringify(vars));
+  },
 };
