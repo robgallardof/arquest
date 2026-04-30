@@ -1,20 +1,53 @@
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+# Arquest / Thunderpost PWA
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+## ES — Descripción
+Cliente HTTP tipo Postman/Thunder con Next.js App Router, enfoque **dark mode**, UX moderna y capacidades **PWA** (instalable/offline cache).
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+## EN — Description
+A Postman/Thunder-like HTTP client built on Next.js App Router with **dark-mode-first UI/UX** and **PWA** capabilities (installable + offline caching).
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+## ES — Variables de entorno
+Crea `.env.local`:
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+```bash
+NEXT_PUBLIC_ENABLE_PROXY_FALLBACK=true
+NEXT_PUBLIC_REQUEST_TIMEOUT_MS=30000
+```
+
+- `NEXT_PUBLIC_ENABLE_PROXY_FALLBACK`: reintenta automáticamente por `/api/proxy` cuando un request directo falla por CORS/network.
+- `NEXT_PUBLIC_REQUEST_TIMEOUT_MS`: timeout por defecto para requests (ms).
+
+## EN — Environment variables
+Create `.env.local`:
+
+```bash
+NEXT_PUBLIC_ENABLE_PROXY_FALLBACK=true
+NEXT_PUBLIC_REQUEST_TIMEOUT_MS=30000
+```
+
+- `NEXT_PUBLIC_ENABLE_PROXY_FALLBACK`: auto-retry through `/api/proxy` when direct requests fail due to CORS/network issues.
+- `NEXT_PUBLIC_REQUEST_TIMEOUT_MS`: default request timeout in milliseconds.
+
+## ES — CORS, localhost y externos
+- Se mantiene request directo a `http://localhost:*` y APIs externas.
+- Si la política CORS del backend bloquea el navegador, la app puede fallback al proxy interno.
+
+## EN — CORS, localhost, and external APIs
+- Direct browser requests to `http://localhost:*` and external APIs remain supported.
+- If backend CORS blocks browser calls, the app can fallback to the internal proxy endpoint.
+
+## PWA Notes
+- App keeps service worker + runtime cache strategy.
+- UX and networking updates preserve PWA behavior.
+
+## Development
+```bash
+pnpm install
+pnpm dev
+```
+
+## Build
+```bash
+pnpm build
+pnpm start
+```
