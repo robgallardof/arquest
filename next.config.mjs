@@ -148,6 +148,7 @@ const nextConfig = {
      */
   },
   outputFileTracingRoot: __dirname,
+  turbopack: {},
   // (Optional) If you serve from a subpath or behind a proxy, add basePath/assetPrefix here.
 };
 
