@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next build && next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "pnpm dlx update-browserslist-db@latest --yes || true",
+    "reinstall:clean": "node -e \"require('fs').rmSync('node_modules',{recursive:true,force:true});require('fs').rmSync('.next',{recursive:true,force:true})\" && pnpm store prune && pnpm install"
   },
   "dependencies": {
     "@fontsource/poppins": "^5.2.6",
