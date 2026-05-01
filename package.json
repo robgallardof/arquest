@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next build && next start",
     "lint": "next lint",
-    "postinstall": "pnpm dlx update-browserslist-db@latest --yes || true",
+    "postinstall": "pnpm up --depth=Infinity --no-save caniuse-lite baseline-browser-mapping || node -e \"process.exit(0)\"",
     "reinstall:clean": "node -e \"require('fs').rmSync('node_modules',{recursive:true,force:true});require('fs').rmSync('.next',{recursive:true,force:true})\" && pnpm store prune && pnpm install"
   },
   "dependencies": {
